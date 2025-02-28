@@ -1,4 +1,4 @@
-#%%
+
 #%%
 import re
 import nltk
@@ -106,7 +106,7 @@ def get_bert_embedding(text):
     return token_embeddings.unsqueeze(0)  # Add batch dimension
 
 # Compute document embeddings
-df["embedding"] = df["text"].apply(get_bert_embedding)\
+df["embedding"] = df["text"].apply(get_bert_embedding)
 #%%
 def search_documents(query, top_k=3):
     """Find the most relevant documents using Cross-Attention."""
