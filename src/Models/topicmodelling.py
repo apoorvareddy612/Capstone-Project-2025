@@ -1,16 +1,14 @@
 #%%
 import pandas as pd
-from sklearn.decomposition import LatentDirichletAllocation
-from sklearn.feature_extraction.text import CountVectorizer
+
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+
 import nltk
 from nltk.corpus import stopwords
 import re
 import gensim
 from gensim import corpora
-from gensim.models import LdaModel
-from gensim.models import CoherenceModel
+
 
 from bertopic import BERTopic
 import contractions
@@ -97,11 +95,21 @@ def search_lda(query, top_k=5):
 query_text = "Piltdown man hoax, hoax vaccines autism hoax please help me"
 search_lda(query_text) 
 
-# %% BERTopic
+
+#%%
 from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
+from bertopic import BERTopic
+
+# Load data
 data = pd.read_csv('/Users/apoorvareddy/Downloads/Academic/DATS6501/data/data.csv')
+
 # Initialize sentence transformer model for embeddings
 sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+# Compute document embeddings
+doc_embeddings = sentence_model.encode(data["text"].astype(str).tolist(), convert_to_tensor=True)
 
 # Fit BERTopic model
 bertopic_model = BERTopic(nr_topics=50)
@@ -110,26 +118,23 @@ topics, probs = bertopic_model.fit_transform(data["text"])
 # Display top topics
 bertopic_model.get_topic_info()
 
-# %%
 def search_bertopic(query, top_k=3):
+    """ Search for relevant documents using BERTopic and sentence embeddings """
     query_embedding = sentence_model.encode([query], convert_to_tensor=True)
     
-    # Find similar topics
-    topic_idx, _ = bertopic_model.find_topics(query, top_n=top_k)
+    # Compute similarity between query and document embeddings
+    similarities = cosine_similarity(query_embedding.cpu().numpy(), doc_embeddings.cpu().numpy()).flatten()
 
-    # Retrieve documents related to topics
-    doc_scores = []
-    for idx, topic in enumerate(topics):
-        if topic in topic_idx:
-            doc_scores.append((idx, topic))
+    # Get top-k most similar document indices
+    top_indices = similarities.argsort()[::-1][:top_k]
 
-    # Sort and retrieve results
-    top_results = [data.iloc[idx]["title"] for idx, _ in doc_scores[:top_k]]
+    # Retrieve top-k document titles
+    top_results = [data.iloc[idx]["title"] for idx in top_indices]
 
     print("\n🔍 BERTopic Search Results:")
     for result in top_results:
         print(f"📌 {result}")
 
 # Example Query
-query_text = "AI in medical science"
+query_text = "Piltdown man hoax, hoax vaccines autism hoax please help me"
 search_bertopic(query_text)

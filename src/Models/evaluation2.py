@@ -1,3 +1,8 @@
+#%%
+import numpy as np
+from tfidf import tfidf_search, bm25_search, combined_search
+from transformers_1 import embedding_search, hybrid_search, multi_vector_search
+#%%
 def mean_reciprocal_rank(results, relevant_docs):
     """
     Compute MRR (Mean Reciprocal Rank).
@@ -62,8 +67,10 @@ def dcg_at_k(ranked_list, relevant_set, k=5):
     Compute Discounted Cumulative Gain (DCG) at K.
     """
     dcg = 0
+    print(f"Ranked List: {ranked_list}")
     for i in range(k):
         if ranked_list[i] in relevant_set:
+            print(f"Ranked List: {ranked_list[i]} is in relevant set")
             dcg += 1 / np.log2(i + 2)  # Log2 starts at 2 to avoid division by zero
     return dcg
 
@@ -74,6 +81,7 @@ def ndcg_at_k(results, relevant_docs, k=5):
     ndcg_scores = []
     for i, ranked_list in enumerate(results):
         relevant_set = set(relevant_docs[i])
+        k = len(relevant_set)
         dcg = dcg_at_k(ranked_list, relevant_set, k)
         ideal_dcg = dcg_at_k(sorted(relevant_set, reverse=True), relevant_set, k)  # Ideal DCG assumes perfect ranking
         ndcg = dcg / ideal_dcg if ideal_dcg > 0 else 0
@@ -84,40 +92,43 @@ def evaluate_models(models, queries, relevant_docs, top_k=5):
     """
     Evaluate multiple models and return the top 3 based on NDCG and MAP.
     """
+    
     model_scores = {}
-
+    print(models)
     for model_name, model_function in models.items():
         all_results = [model_function(query) for query in queries]
+
+        # Handle NoneType results by replacing them with an empty list
+        all_results = [res if res is not None else [] for res in all_results]
+        print(all_results)
 
         # Compute all evaluation metrics
         top_n = top_n_accuracy(all_results, relevant_docs, top_k)
         prec_k = precision_at_k(all_results, relevant_docs, top_k)
         map_score = mean_average_precision(all_results, relevant_docs)
+        mpr = mean_reciprocal_rank(all_results, relevant_docs)
         ndcg = ndcg_at_k(all_results, relevant_docs, top_k)
 
-        model_scores[model_name] = (top_n, prec_k, map_score, ndcg)
-
+        model_scores[model_name] = (top_n, prec_k, map_score, mpr, ndcg)
+    print(model_scores)
     # Rank models based on NDCG + MAP (weighted sum for ranking)
-    ranked_models = sorted(model_scores.items(), key=lambda x: (x[1][3] + x[1][2]) / 2, reverse=True)
+    ranked_models = sorted(model_scores.items(), key=lambda x: (x[1][4] + x[1][2]) / 2, reverse=True)
 
     return ranked_models[:3], model_scores  # Return top 3 models and full scores
 
+
 # Example: Models dictionary (replace with actual function calls)
 models = {
-    "BM25": bm25_search, 
-    "TF-IDF": tfidf_search,  
     "RoBERTa": roberta_search,
-    "DistilBERT + Attention": distilbert_attention_search,
-    "Cross-Attention Transformer": cross_attention_search,
-    "LDA Topic Modeling": lda_search,
+    "Self-Attention Transformer": cross_attention_search,
     "BERTopic": bertopic_search
 }
 
 # Example Queries
-queries = ["AI in healthcare", "Machine learning in finance", "Deep learning applications"]
+queries = ["I don't remember which episode it speaks about Piltdown man hoax please help me"]
 
 # Example Relevant Docs (Manually defined for evaluation)
-relevant_docs = [[1, 2], [0, 3], [2, 4]]
+relevant_docs = [[514, 1191, 542]]
 
 # Get Top 3 Models and Full Scores
 top_models, full_scores = evaluate_models(models, queries, relevant_docs, top_k=5)
@@ -125,8 +136,8 @@ top_models, full_scores = evaluate_models(models, queries, relevant_docs, top_k=
 # Print Results
 print("Top 3 Models based on NDCG & MAP:")
 for rank, (model, scores) in enumerate(top_models, start=1):
-    print(f"{rank}. {model} -> Top-N: {scores[0]:.4f}, Precision@K: {scores[1]:.4f}, MAP: {scores[2]:.4f}, NDCG: {scores[3]:.4f}")
+    print(f"{rank}. {model} -> Top-N: {scores[0]:.4f}, Precision@K: {scores[1]:.4f}, MAP: {scores[2]:.4f}, MPR: {scores[3]:.4f}, NDCG: {scores[4]:.4f}")
 
 print("\nFull Evaluation Scores:")
 for model, scores in full_scores.items():
-    print(f"{model} -> Top-N: {scores[0]:.4f}, Precision@K: {scores[1]:.4f}, MAP: {scores[2]:.4f}, NDCG: {scores[3]:.4f}")
+    print(f"{model} -> Top-N: {scores[0]:.4f}, Precision@K: {scores[1]:.4f}, MAP: {scores[2]:.4f}, MPR: {scores[3]:.4f}, NDCG: {scores[4]:.4f}")
