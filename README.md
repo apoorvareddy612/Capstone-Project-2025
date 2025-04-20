@@ -54,3 +54,20 @@ This ensemble of models ensures that the search engine supports both exact-match
 `cross-encoder/ms-marco-MiniLM-L-6-v2` for reranking
 
 Precomputed FAISS indexes and NumPy embeddings for fast retrieval
+
+## Launching the demo
+1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/podcast-semantic-search.git
+cd podcast-semantic-search
+```
+2. Set Up Virtual Environment
+```bash
+python3.10 -m venv env
+source env/bin/activate  # or use env\Scripts\activate on Windows
+pip install -r requirements.txt
+```
+3. Launch the Streamlit App
+```bash
+streamlit run app.py
+```
