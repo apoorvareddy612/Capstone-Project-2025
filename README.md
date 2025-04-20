@@ -58,7 +58,7 @@ Precomputed FAISS indexes and NumPy embeddings for fast retrieval
 ## Launching the demo
 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/podcast-semantic-search.git
+git clone https://github.com/apoorvareddy612/Capstone-Project-2025.git
 cd podcast-semantic-search
 ```
 2. Set Up Virtual Environment
