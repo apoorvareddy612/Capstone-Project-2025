@@ -14,8 +14,7 @@ if torch.cuda.is_available():
 
 import streamlit as st
 import pandas as pd
-import faiss, numpy as np, torch
-from sentence_transformers import SentenceTransformer
+import torch
 from Models.models import (
     extract_keywords, bm25_search, tfidf_search, combined_search, hybrid_search, retrieve_and_rerank, search_roberta, search_bert
 )
@@ -29,7 +28,7 @@ def main():
     # --------------- DATA ---------------
     @st.cache_data
     def load_df():
-        return pd.read_csv("data/data.csv")
+        return pd.read_csv("Capstone-Project-2025/data/data.csv")
 
     df = load_df()
 
@@ -56,13 +55,13 @@ def main():
     # --------------- INTRO PAGE ---------
     if page == "Introduction":
         st.title("Podmatch: Semantic Search for Podcasts")
+        st.image("Capstone-Project-2025/assets/image.png", width=700)
         st.markdown(
             """
             Welcome to Podmatch! This app allows you to search through a curated collection of podcast episodes using various semantic search models.
             You can choose from different search algorithms in the sidebar to find relevant episodes based on your queries.
             """
         )
-        st.image("Capstone-Project-2025/assets/image.png", width=400)
         st.info("Select a model in the sidebar to start searching.")
 
     # --------------- MODEL PAGES --------

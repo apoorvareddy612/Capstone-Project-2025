@@ -25,7 +25,7 @@ nltk.download('wordnet')
 stop_words = set(stopwords.words("english"))
 nlp = spacy.load("en_core_web_sm")
 #%%
-df = pd.read_csv('/Users/apoorvareddy/Downloads/Academic/DATS6501/data/data.csv')
+df = pd.read_csv('Capstone-Project-2025/data/data.csv')
 
 def clean_text(text):
     #lowercase
