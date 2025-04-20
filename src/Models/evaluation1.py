@@ -124,17 +124,14 @@ models = {
     "BM25 + TFIDF": combined_search,
     "SentBERT": embedding_search,
     "BERT + BM25": hybrid_search,
-    "MultiQuery": multi_vector_search, 
-    # "RoBERTa": roberta_search,
-    # "Cross-Attention Transformer": cross_attention_search,
-    # "BERTopic": bertopic_search
+    "MultiQuery": multi_vector_search
 }
 
 # Example Queries
 queries = ["I don't remember which episode it speaks about Piltdown man hoax please help me"]
 
 # Example Relevant Docs (Manually defined for evaluation)
-relevant_docs = [[514, 1191, 542]]
+relevant_docs = [[514, 1191, 542, 1342, 722]] 
 
 # Get Top 3 Models and Full Scores
 top_models, full_scores = evaluate_models(models, queries, relevant_docs, top_k=5)

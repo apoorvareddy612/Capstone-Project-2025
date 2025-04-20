@@ -1,7 +1,15 @@
 #%%
 import numpy as np
-from tfidf import tfidf_search, bm25_search, combined_search
-from transformers_1 import embedding_search, hybrid_search, multi_vector_search
+import pandas as pd
+import torch
+from sklearn.metrics.pairwise import cosine_similarity
+from transformers import BertTokenizer, BertModel
+from bertopic import BERTopic
+from transformers import RobertaModel, RobertaTokenizer
+import torch.nn as nn
+from sentence_transformers import SentenceTransformer, CrossEncoder
+import faiss
+
 #%%
 def mean_reciprocal_rank(results, relevant_docs):
     """
@@ -115,20 +123,137 @@ def evaluate_models(models, queries, relevant_docs, top_k=5):
     ranked_models = sorted(model_scores.items(), key=lambda x: (x[1][4] + x[1][2]) / 2, reverse=True)
 
     return ranked_models[:3], model_scores  # Return top 3 models and full scores
+#%%
+
+# BERT + Self-Attention
+tokenizer = BertTokenizer.from_pretrained("/Users/apoorvareddy/Downloads/Academic/DATS6501/bert/bert_saved_model")
+bert_model = BertModel.from_pretrained("bert-base-uncased")
+bert_model.eval()  # Set model to evaluation mode
+
+class SelfAttention(nn.Module):
+    def __init__(self, embedding_dim, heads=1):
+        super(SelfAttention, self).__init__()
+        self.attention = nn.MultiheadAttention(embed_dim=embedding_dim, num_heads=heads, batch_first=True)
+
+    def forward(self, x):
+        attn_output, _ = self.attention(x, x, x)
+        return attn_output.mean(dim=1)  
+
+self_attention = SelfAttention(embedding_dim=768)  # Initialize the SelfAttention model with the right dimensions
+self_attention.load_state_dict(torch.load('/Users/apoorvareddy/Downloads/Academic/DATS6501/bert/self_attention.pth', map_location=torch.device('cpu')))  # Load the state dictionary to CPU
+self_attention.eval()
+
+# Ensure that the device is set to 'cpu' to avoid CUDA issues
+device = torch.device('cpu')
+
+# Try loading the BERT embeddings and handle potential errors
+try:
+    bert_embeddings = np.load('/Users/apoorvareddy/Downloads/Academic/DATS6501/bert/bert_document_embeddings.npy')
+    dimension = bert_embeddings.shape[1]
+    index = faiss.IndexFlatL2(dimension)  
+    index.add(bert_embeddings)  
+    faiss.write_index(index, "bert_index.index")
+    print("✅ FAISS index saved as 'bert_index.index'")
+
+except FileNotFoundError:
+    print("Error: BERT embeddings file not found.")
+    bert_embeddings = None
+
+# RoBERTa
+roberta_model = RobertaModel.from_pretrained("/Users/apoorvareddy/Downloads/Academic/DATS6501/RoberTa/roberta_saved_model")
+tokenizer = RobertaTokenizer.from_pretrained("/Users/apoorvareddy/Downloads/Academic/DATS6501/RoberTa/roberta_saved_model")
+roberta_model.eval()  # Set model to evaluation mode
+roberta_embeddings = np.load('/Users/apoorvareddy/Downloads/Academic/DATS6501/RoberTa/roberta_document_embeddings.npy')
+dimension = roberta_embeddings.shape[1]
+index = faiss.IndexFlatL2(dimension)  
+index.add(roberta_embeddings)  
+faiss.write_index(index, "roberta_index.faiss")
+print("✅ FAISS index saved as 'roberta_index.faiss'")
+# roberta_processed_data = pd.read_csv('path_to/processed_data.csv')
+
+# Define paths
+save_path = "/Users/apoorvareddy/Downloads/Academic/DATS6501/encoder_model/retrieval_model"
+embedding_path = "/Users/apoorvareddy/Downloads/Academic/DATS6501/encoder_model/corpus_embeddings.npy"
+faiss_index_path = "/Users/apoorvareddy/Downloads/Academic/DATS6501/encoder_model/faiss_index.bin"
+
+# Search function for BERT + Self-Attention
+def search_bert(query, top_k=5):
+    """ Find relevant documents using BERT + Self-Attention """
+    inputs = tokenizer(query, return_tensors="pt", truncation=True, padding=True, max_length=512)
+    with torch.no_grad():
+        outputs = bert_model(**inputs)
+    token_embeddings = outputs.last_hidden_state.squeeze(0)
+    refined_embedding = self_attention(token_embeddings.unsqueeze(0))
+    query_embedding = refined_embedding.squeeze(0).detach().numpy()
+
+    similarities = cosine_similarity([query_embedding], bert_embeddings).flatten()
+    top_indices = similarities.argsort()[::-1][:top_k]
+    return list(top_indices)
+
+# Search function for RoBERTa
+def search_roberta(query, top_k=5):
+    """ Search for relevant documents using RoBERTa """
+    inputs = tokenizer(query, return_tensors="pt", truncation=True, padding=True, max_length=512)
+    with torch.no_grad():
+        outputs = roberta_model(**inputs)
+    query_embedding = outputs.last_hidden_state[:, 0, :].squeeze().numpy()
+
+    similarities = cosine_similarity([query_embedding], roberta_embeddings).flatten()
+    top_indices = similarities.argsort()[::-1][:top_k]
+    return list(top_indices)
 
 
+def retrieve_and_rerank(query, top_k=5):
+    """ Retrieve relevant documents using SentenceTransformer + FAISS and Re-Rank using Cross-Encoder """
+    
+    # Load the retriever model (Bi-Encoder)
+    retriever = SentenceTransformer("/Users/apoorvareddy/Downloads/Academic/DATS6501/encoder_model/retriever_model", device="cpu")
+    
+    # Load the re-ranker model (Cross-Encoder)
+    reranker = CrossEncoder("/Users/apoorvareddy/Downloads/Academic/DATS6501/encoder_model/reranker_model", device="cpu")
+    
+    # Load the FAISS index
+    faiss_index = faiss.read_index("/Users/apoorvareddy/Downloads/Academic/DATS6501/encoder_model/faiss_index.bin")
+    
+    
+    # Load the corpus (or it can be passed as an argument to avoid re-reading)
+    df = pd.read_csv('/Users/apoorvareddy/Downloads/Academic/DATS6501/data/data.csv')
+    df["combined_text"] = df["title"] + " " + df["text"]
+    corpus = df["combined_text"].tolist()
+
+    # Encode the query into the same vector space
+    query_embedding = retriever.encode(query, convert_to_tensor=True).cpu().numpy().reshape(1, -1)
+
+    # FAISS Search
+    _, retrieved_indices = faiss_index.search(query_embedding.reshape(1, -1), top_k)
+    retrieved_indices = retrieved_indices[0]
+
+    # Retrieve the documents based on indices
+    retrieved_docs = [corpus[idx] for idx in retrieved_indices]
+    query_doc_pairs = [[query, doc] for doc in retrieved_docs]
+    
+    # Re-Rank using Cross-Encoder
+    relevance_scores = reranker.predict(query_doc_pairs)
+    
+    # Sort results by relevance score (descending order)
+    reranked_results = sorted(zip(retrieved_indices, retrieved_docs, relevance_scores), key=lambda x: x[2], reverse=True)
+
+    # Return the sorted list of indices
+    return [idx for idx, _, _ in reranked_results]
+
+#%%
 # Example: Models dictionary (replace with actual function calls)
 models = {
-    "RoBERTa": roberta_search,
-    "Self-Attention Transformer": cross_attention_search,
-    "BERTopic": bertopic_search
+    "RoBERTa": search_roberta,
+    "Self-Attention Transformer": search_bert,
+    "Bi-Encoder,Cross-Encoder" : retrieve_and_rerank
 }
 
 # Example Queries
 queries = ["I don't remember which episode it speaks about Piltdown man hoax please help me"]
 
 # Example Relevant Docs (Manually defined for evaluation)
-relevant_docs = [[514, 1191, 542]]
+relevant_docs = [[514, 1191, 542, 1342, 722]] 
 
 # Get Top 3 Models and Full Scores
 top_models, full_scores = evaluate_models(models, queries, relevant_docs, top_k=5)
