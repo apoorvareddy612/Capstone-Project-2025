@@ -25,7 +25,7 @@ nltk.download('wordnet')
 stop_words = set(stopwords.words("english"))
 nlp = spacy.load("en_core_web_sm")
 #%%
-df = pd.read_csv('Capstone-Project-2025/data/data.csv')
+df = pd.read_csv('./data/data.csv')
 
 def clean_text(text):
     #lowercase
@@ -183,8 +183,8 @@ def combined_search(query, top_k=5):
 #%%
 # Load model and precomputed embeddings
 embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-document_embeddings = np.load("Capstone-Project-2025/src/Models/SentBERT/document_embeddings.npy")
-faiss_index = faiss.read_index("Capstone-Project-2025/src/Models/SentBERT/faiss_document_index.index")
+document_embeddings = np.load("./src/Models/SentBERT/document_embeddings.npy")
+faiss_index = faiss.read_index("./src/Models/SentBERT/faiss_document_index.index")
 
 # # Updated embedding_search using FAISS
 # def embedding_search(query, top_k=5):
@@ -225,13 +225,13 @@ def retrieve_and_rerank(query, top_k=5):
     """ Retrieve relevant documents using SentenceTransformer + FAISS and Re-Rank using Cross-Encoder """
     
     # Load the retriever model (Bi-Encoder)
-    retriever = SentenceTransformer("Capstone-Project-2025/src/Models/encoder_model/retriever_model", device="cpu")
+    retriever = SentenceTransformer("./src/Models/encoder_model/retriever_model", device="cpu")
     
     # Load the re-ranker model (Cross-Encoder)
-    reranker = CrossEncoder("Capstone-Project-2025/src/Models/encoder_model/reranker_model", device="cpu")
+    reranker = CrossEncoder("./src/Models/encoder_model/reranker_model", device="cpu")
     
     # Load the FAISS index
-    faiss_index = faiss.read_index("Capstone-Project-2025/src/Models/encoder_model/faiss_index.bin")
+    faiss_index = faiss.read_index("./src/Models/encoder_model/faiss_index.bin")
     
     
     # Load the corpus (or it can be passed as an argument to avoid re-reading)
@@ -260,7 +260,7 @@ def retrieve_and_rerank(query, top_k=5):
     return [idx for idx, _, _ in reranked_results]
 #%%
 # Load tokenizer and base BERT model
-tokenizer = BertTokenizer.from_pretrained("Capstone-Project-2025/src/Models/bert/bert_saved_model")
+tokenizer = BertTokenizer.from_pretrained("./src/Models/bert/bert_saved_model")
 bert_model = BertModel.from_pretrained("bert-base-uncased")
 bert_model.eval()
 
@@ -276,14 +276,14 @@ class SelfAttention(nn.Module):
 
 # Initialize Self-Attention layer and load trained weights
 self_attention = SelfAttention(embedding_dim=768)
-self_attention.load_state_dict(torch.load('Capstone-Project-2025/src/Models/bert/self_attention.pth', map_location=torch.device('cpu')))
+self_attention.load_state_dict(torch.load('./src/Models/bert/self_attention.pth', map_location=torch.device('cpu')))
 self_attention.eval()
 
 # Search Function using FAISS
 def search_bert(query, top_k=5):
     # Load FAISS inside the function
     try:
-        index = faiss.read_index("Capstone-Project-2025/src/Models/bert/bert_index.index")
+        index = faiss.read_index("./src/Models/bert/bert_index.index")
     except Exception as e:
         print(f"Failed to load FAISS index: {e}")
         return []
@@ -300,13 +300,13 @@ def search_bert(query, top_k=5):
 
 #%%
 # Load tokenizer and model
-roberta_model = RobertaModel.from_pretrained("Capstone-Project-2025/src/Models/RoberTa/roberta_saved_model")
-tokenizer = RobertaTokenizer.from_pretrained("Capstone-Project-2025/src/Models/RoberTa/roberta_saved_model")
+roberta_model = RobertaModel.from_pretrained("./src/Models/RoberTa/roberta_saved_model")
+tokenizer = RobertaTokenizer.from_pretrained("./src/Models/RoberTa/roberta_saved_model")
 roberta_model.eval()
 
 # Load saved embeddings and FAISS index
-roberta_embeddings = np.load('Capstone-Project-2025/src/Models/RoberTa/roberta_document_embeddings.npy')
-faiss_index = faiss.read_index("Capstone-Project-2025/src/Models/RoberTa/roberta_index.faiss")
+roberta_embeddings = np.load('./src/Models/RoberTa/roberta_document_embeddings.npy')
+faiss_index = faiss.read_index("./src/Models/RoberTa/roberta_index.faiss")
 
 # Define search function
 def search_roberta(query, top_k=5):

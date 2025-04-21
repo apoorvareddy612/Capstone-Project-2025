@@ -28,7 +28,7 @@ def main():
     # --------------- DATA ---------------
     @st.cache_data
     def load_df():
-        return pd.read_csv("Capstone-Project-2025/data/data.csv")
+        return pd.read_csv("./data/data.csv")
 
     df = load_df()
 
