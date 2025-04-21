@@ -73,7 +73,7 @@ def main():
             with st.spinner("Searching..."):
                 query = extract_keywords(query)  # Clean and segment the query
                 indices = MODEL_FUNCS[page](query, top_k=top_k)
-            st.subheader("{top_k} Similar Results to your query")
+            st.subheader(f"{top_k} Similar Results to your query")
             if indices is None or len(indices)==0:
                 st.warning("No results returned by this model.")
             else:
