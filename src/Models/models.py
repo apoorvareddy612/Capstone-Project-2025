@@ -21,6 +21,7 @@ import contractions
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
+nltk.download('punkt_tab')
 
 stop_words = set(stopwords.words("english"))
 nlp = spacy.load("en_core_web_sm")
