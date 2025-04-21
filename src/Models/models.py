@@ -242,7 +242,7 @@ def retrieve_and_rerank(query, top_k=5):
 #%%
 # Load tokenizer and base BERT model
 tokenizer = BertTokenizer.from_pretrained("./src/Models/bert/bert_saved_model")
-bert_model = BertModel.from_pretrained("bert-base-uncased")
+bert_model = BertModel.from_pretrained("./src/Models/bert/bert_saved_model")
 bert_model.eval()
 
 # Define Self-Attention layer
