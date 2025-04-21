@@ -70,28 +70,6 @@ original_titles = titles.copy()  # Preserve original format
 # Preprocess for embedding
 df['title'] = [preprocess_title(title) for title in titles]
 
-# %%
-# # Example query
-# def clean_query(query):
-#     # Tokenize the query
-#     tokens = nltk.word_tokenize(query)
-    
-#     # Remove stopwords
-#     stop_words = set(stopwords.words('english'))
-#     filtered_tokens = [word for word in tokens if word.lower() not in stop_words]
-    
-#     # Remove punctuation
-#     filtered_tokens = [word for word in filtered_tokens if word not in string.punctuation]
-    
-#     # Lemmatize the tokens
-#     lemmatizer = WordNetLemmatizer()
-#     lemmatized_tokens = [lemmatizer.lemmatize(word) for word in filtered_tokens]
-    
-#     # Join the cleaned tokens back into a string
-#     cleaned_query = " ".join(lemmatized_tokens)
-    
-#     return cleaned_query
-
 # Function to clean and extract key topics
 def extract_keywords(query):
     """
@@ -183,7 +161,9 @@ def combined_search(query, top_k=5):
 
 #%%
 # Load model and precomputed embeddings
-embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+embedding_model = SentenceTransformer('./src/Models/all-MiniLM-L6-v2')
+# embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 document_embeddings = np.load("./src/Models/SentBERT/document_embeddings.npy")
 faiss_index = faiss.read_index("./src/Models/SentBERT/faiss_document_index.index")
 

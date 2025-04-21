@@ -56,7 +56,7 @@ def main():
     # --------------- INTRO PAGE ---------
     if page == "Introduction":
         st.title("Podmatch: Semantic Search for Podcasts")
-        st.image("Capstone-Project-2025/assets/image.png", width=700)
+        st.image("./assets/image.png", width=700)
         st.markdown(
             """
             Welcome to Podmatch! This app allows you to search through a curated collection of podcast episodes using various semantic search models.
