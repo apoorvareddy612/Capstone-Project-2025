@@ -59,8 +59,16 @@ def main():
         st.image("./assets/image.png", width=700)
         st.markdown(
             """
-            Welcome to Podmatch! This app allows you to search through a curated collection of podcast episodes using various semantic search models.
+            ### Welcome to PodMatch!
+
+            This app allows you to search through a curated collection of podcast episodes using various semantic search models.
             You can choose from different search algorithms in the sidebar to find relevant episodes based on your queries.
+
+            ---
+            **Disclaimer:**  
+            The podcasts used to train the search engine include a curated selection from *Lex Fridman Podcast*, *Huberman Lab*, *Vox's Today, Explained*, and *Skeptoid*.  
+            These episodes span genres including science, psychology, artificial intelligence, politics, and critical thinking.  
+            This tool is for educational and demonstrative purposes only and is not affiliated with or endorsed by the respective podcast creators.
             """
         )
         st.info("Select a model in the sidebar to start searching.")

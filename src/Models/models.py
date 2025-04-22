@@ -162,8 +162,8 @@ def combined_search(query, top_k=5):
 #%%
 # Load model and precomputed embeddings
 
-embedding_model = SentenceTransformer('./src/Models/all-MiniLM-L6-v2')
-# embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+# embedding_model = SentenceTransformer('./src/Models/all-MiniLM-L6-v2')
+embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 document_embeddings = np.load("./src/Models/SentBERT/document_embeddings.npy")
 faiss_index = faiss.read_index("./src/Models/SentBERT/faiss_document_index.index")
 
@@ -242,7 +242,7 @@ def retrieve_and_rerank(query, top_k=5):
 #%%
 # Load tokenizer and base BERT model
 tokenizer = BertTokenizer.from_pretrained("./src/Models/bert/bert_saved_model")
-bert_model = BertModel.from_pretrained("./src/Models/bert/bert_saved_model")
+bert_model = BertModel.from_pretrained("bert-base-uncased")
 bert_model.eval()
 
 # Define Self-Attention layer
